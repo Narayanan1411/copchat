@@ -52,10 +52,10 @@
   <button id="send-button" onclick="sendMessage()">Send</button>
 
   <script>
-    // Listen for "Enter" key presses on the input field
+    // Send message on Enter key press
     document.getElementById("user-input").addEventListener("keydown", function(event) {
       if (event.key === "Enter") {
-        event.preventDefault(); // Prevent form submission if any
+        event.preventDefault();
         sendMessage();
       }
     });
@@ -97,28 +97,31 @@
       return bodyElement ? bodyElement.textContent.trim() : null;
     }
 
-    // Parse the raw response text into sections: Answer, Follow-ups, Complaint Format, Procedure Steps
+    // Parse the response text and extract desired sections:
+    // Only capture the LAST "Answer:" block (ignoring any "Short Answer:" sections) along with Follow-ups, Complaint Format, and Procedure Steps.
     function parseResponseSections(text) {
       if (!text) return "";
 
-      // Define regex patterns for each section (case-insensitive)
-      const answerRegex = /Answer:\s*([\s\S]*?)(?=\s*(Follow-ups:|Complaint Format:|Procedure Steps:|$))/i;
+      // Use matchAll to get all occurrences of "Answer:" blocks.
+      const answerMatches = Array.from(text.matchAll(/Answer:\s*([\s\S]*?)(?=(Short Answer:|Answer:|Follow-ups:|Complaint Format:|Procedure Steps:|$))/gi);
+      let answerText = "";
+      if (answerMatches.length > 0) {
+        // Choose the last "Answer:" block.
+        answerText = answerMatches[answerMatches.length - 1][1].trim();
+      }
+
       const followUpsRegex = /Follow-ups:\s*([\s\S]*?)(?=\s*(Complaint Format:|Procedure Steps:|$))/i;
       const complaintRegex = /Complaint Format:\s*([\s\S]*?)(?=\s*(Procedure Steps:|$))/i;
       const procedureRegex = /Procedure Steps:\s*([\s\S]*)/i;
 
-      const answerMatch = text.match(answerRegex);
       const followUpsMatch = text.match(followUpsRegex);
       const complaintMatch = text.match(complaintRegex);
       const procedureMatch = text.match(procedureRegex);
 
-      // Extract sections or default to an empty string if not found
-      const answerText = answerMatch ? answerMatch[1].trim() : "";
       const followUpsText = followUpsMatch ? followUpsMatch[1].trim() : "";
       const complaintText = complaintMatch ? complaintMatch[1].trim() : "";
       const procedureText = procedureMatch ? procedureMatch[1].trim() : "";
 
-      // Build final output
       let output = "";
       if (answerText) {
         output += "Answer: " + answerText + "\n\n";
